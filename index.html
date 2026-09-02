@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarFix Inventory &amp; Repair Manager</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-wrap" id="authView">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="name">SolarFix</div>
+        <div class="sub">Inventory &amp; Repair Manager</div>
+      </div>
+    </div>
+
+    <div id="loginPane">
+      <h2>Sign in</h2>
+      <p class="section-note">Use the email and password your admin set up for you.</p>
+      <div class="auth-error" id="loginError"></div>
+      <form class="auth-form" id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+          <span class="btn-label">Sign in</span>
+        </button>
+      </form>
+      <p class="auth-foot">First time setting this up? <button class="link-btn" id="showSetup">Create the first admin account</button></p>
+    </div>
+
+    <div id="setupPane" style="display:none;">
+      <h2>Create first admin account</h2>
+      <p class="section-note">Only do this once, when setting up SolarFix for the first time. Everyone after this should be added from the Staff screen by an admin.</p>
+      <div class="auth-error" id="setupError"></div>
+      <form class="auth-form" id="setupForm">
+        <div class="field">
+          <label for="setupName">Your full name</label>
+          <input type="text" id="setupName" required>
+        </div>
+        <div class="field">
+          <label for="setupEmail">Email</label>
+          <input type="email" id="setupEmail" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="setupPassword">Password</label>
+          <input type="password" id="setupPassword" required minlength="6" autocomplete="new-password">
+          <span class="hint">At least 6 characters.</span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="setupBtn">
+          <span class="btn-label">Create admin account</span>
+        </button>
+      </form>
+      <p class="auth-foot"><button class="link-btn" id="showLogin">Back to sign in</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app" id="appShell" style="display:none;">
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0a1220" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="name">SolarFix</div>
+        <div class="sub">Inventory Manager</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-view="inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
+        <span>Inventory</span>
+        <span class="badge-count" id="lowStockCount">0</span>
+      </div>
+      <div class="nav-item" data-view="repairs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-3-3z"/></svg>
+        <span>Repairs</span>
+      </div>
+      <div class="nav-item" data-view="reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M8 17V10M13 17V6M18 17v-4"/></svg>
+        <span>Daily Report</span>
+      </div>
+      <div class="nav-item" data-view="staff" data-role-min="admin" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Staff</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="avatar" id="userAvatar">?</div>
+      <div class="who">
+        <div class="n" id="userName">—</div>
+        <div class="r" id="userRole">—</div>
+      </div>
+      <button id="logoutBtn" title="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="hamburger" id="hamburgerBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div>
+        <div class="crumb" id="topCrumb">SolarFix</div>
+        <h1 id="topTitle">Dashboard</h1>
+      </div>
+      <div class="topbar-actions">
+        <div class="pulse"><span class="dot" id="connDot"></span><span id="connLabel">Connected</span></div>
+        <div class="date-pill" id="todayPill"></div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="view active" id="view-dashboard">
+        <div class="view-head">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Today's snapshot across stock and repairs.</p>
+          </div>
+        </div>
+
+        <div class="cards-grid" id="dashCards"></div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Recent stock activity</h3>
+              <span class="sub">Last 10 movements</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>When</th><th>Item</th><th>Action</th><th>Change</th><th>By</th></tr></thead>
+                <tbody id="dashActivityBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Low stock</h3>
+              <span class="sub">Needs reordering</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Item</th><th>Qty</th></tr></thead>
+                <tbody id="dashLowStockBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== INVENTORY ===== -->
+      <section class="view" id="view-inventory">
+        <div class="view-head">
+          <div>
+            <h2>Inventory</h2>
+            <p>Batteries, panels, breakers, inverters, transformers, SPDs and extinguishers.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-amber" id="addItemBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Add stock
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="toolbar">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" id="invSearch" placeholder="Search by name or spec…">
+            </div>
+            <select id="invCategoryFilter">
+              <option value="">All categories</option>
+              <option>Lithium Battery</option>
+              <option>Tubular Battery</option>
+              <option>Breaker</option>
+              <option>Panel</option>
+              <option>Inverter</option>
+              <option>Transformer Base</option>
+              <option>Surge Protective Device</option>
+              <option>Fire Extinguisher</option>
+              <option>Other</option>
+            </select>
+            <select id="invStockFilter">
+              <option value="">All stock levels</option>
+              <option value="low">Low stock only</option>
+            </select>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Category</th><th>Name</th><th>Spec</th><th>Volts/Type</th><th>Qty</th><th>Status</th><th>Updated</th><th></th></tr>
+              </thead>
+              <tbody id="inventoryBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="inventoryEmpty" style="display:none;">
+            <b>No items yet</b>
+            <p>Add your first stock item to get started.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REPAIRS ===== -->
+      <section class="view" id="view-repairs">
+        <div class="view-head">
+          <div>
+            <h2>Repairs</h2>
+            <p>Track devices from intake through collection.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-amber" id="addRepairBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              New repair ticket
+            </button>
+          </div>
+        </div>
+
+        <div class="kanban" id="repairsKanban"></div>
+      </section>
+
+      <!-- ===== REPORTS ===== -->
+      <section class="view" id="view-reports">
+        <div class="view-head">
+          <div>
+            <h2>Daily Report</h2>
+            <p>End-of-day summary to share with the boss.</p>
+          </div>
+          <div class="view-actions">
+            <input type="date" id="reportDate" class="field-inline">
+            <button class="btn" id="printReportBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+              Print / Save PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="cards-grid" id="reportCards"></div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4>Stock added vs removed today</h4>
+            <canvas id="chartMovement" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Current stock by category</h4>
+            <canvas id="chartCategory" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Reorder list</h3>
+            <span class="sub">Items at or below their low-stock threshold</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Category</th><th>Item</th><th>In stock</th><th>Threshold</th></tr></thead>
+              <tbody id="reportReorderBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Today's activity log</h3>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Time</th><th>Item</th><th>Action</th><th>Change</th><th>By</th></tr></thead>
+              <tbody id="reportLogBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== STAFF (admin only) ===== -->
+      <section class="view" id="view-staff">
+        <div class="view-head">
+          <div>
+            <h2>Staff</h2>
+            <p>Manage who can access SolarFix and what they can do.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-amber" id="addStaffBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Add staff member
+            </button>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <div>
+            <b>Roles, explained</b>
+            Workers can add stock and log repairs. Secretaries can also edit/remove stock and run reports. Admins can do everything, including managing staff accounts.
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead>
+              <tbody id="staffBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Add/Edit inventory item -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="itemModalTitle">Add stock item</h3>
+        <p>Fields match your existing paper log books.</p>
+      </div>
+      <button class="modal-close" data-close="itemModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="itemForm" class="form-grid">
+        <input type="hidden" id="itemId">
+        <div class="field">
+          <label for="itemCategory">Category <span class="req">*</span></label>
+          <select id="itemCategory" required>
+            <option value="">Select…</option>
+            <option>Lithium Battery</option>
+            <option>Tubular Battery</option>
+            <option>Breaker</option>
+            <option>Panel</option>
+            <option>Inverter</option>
+            <option>Transformer Base</option>
+            <option>Surge Protective Device</option>
+            <option>Fire Extinguisher</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="itemName">Name / Brand <span class="req">*</span></label>
+          <input type="text" id="itemName" placeholder="e.g. LV Topsun" required>
+        </div>
+        <div class="field">
+          <label for="itemSpec1">Size / Watts / Amps</label>
+          <input type="text" id="itemSpec1" placeholder="e.g. 15kWh, 750 Watts, 63A">
+        </div>
+        <div class="field">
+          <label for="itemSpec2">Volts</label>
+          <input type="text" id="itemSpec2" placeholder="e.g. 48V, 220V">
+        </div>
+        <div class="field">
+          <label for="itemSpec3">Type</label>
+          <input type="text" id="itemSpec3" placeholder="e.g. Single, Double">
+        </div>
+        <div class="field">
+          <label for="itemQty">Quantity <span class="req">*</span></label>
+          <input type="number" id="itemQty" min="0" required>
+        </div>
+        <div class="field">
+          <label for="itemThreshold">Low stock alert below</label>
+          <input type="number" id="itemThreshold" min="0" value="2">
+          <span class="hint">You'll see this item flagged on the reorder list once quantity drops to or below this.</span>
+        </div>
+        <div class="field span-2">
+          <label for="itemNotes">Notes</label>
+          <textarea id="itemNotes" placeholder="Optional"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger left" id="deleteItemBtn" style="display:none;">Delete</button>
+      <button class="btn" data-close="itemModal">Cancel</button>
+      <button class="btn btn-primary" id="saveItemBtn">
+        <span class="btn-label">Save</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit repair -->
+<div class="modal-overlay" id="repairModal">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div>
+        <h3 id="repairModalTitle">New repair ticket</h3>
+        <p>Track the device from intake through collection.</p>
+      </div>
+      <button class="modal-close" data-close="repairModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="repairForm" class="form-grid">
+        <input type="hidden" id="repairId">
+        <div class="form-section-title">Customer</div>
+        <div class="field">
+          <label for="repCustomerName">Customer name <span class="req">*</span></label>
+          <input type="text" id="repCustomerName" required>
+        </div>
+        <div class="field">
+          <label for="repCustomerPhone">Phone</label>
+          <input type="text" id="repCustomerPhone">
+        </div>
+
+        <div class="form-section-title">Device</div>
+        <div class="field span-2">
+          <label for="repDevice">Device description <span class="req">*</span></label>
+          <input type="text" id="repDevice" placeholder="e.g. 5kVA Luxsun inverter">
+        </div>
+        <div class="field span-2">
+          <label for="repIssue">Issue reported <span class="req">*</span></label>
+          <textarea id="repIssue" required></textarea>
+        </div>
+
+        <div class="form-section-title">Status</div>
+        <div class="field">
+          <label for="repStatus">Status</label>
+          <select id="repStatus">
+            <option>Received</option>
+            <option>Diagnosis</option>
+            <option>Awaiting Approval</option>
+            <option>Repair In Progress</option>
+            <option>Waiting Parts</option>
+            <option>Testing</option>
+            <option>Completed</option>
+            <option>Ready for Collection</option>
+            <option>Collected</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="repAssigned">Assigned technician</label>
+          <select id="repAssigned"><option value="">Unassigned</option></select>
+        </div>
+        <div class="field">
+          <label for="repLabor">Labor cost</label>
+          <input type="number" id="repLabor" min="0" step="0.01">
+        </div>
+
+        <div class="form-section-title">Parts used (deducts from inventory)</div>
+        <div class="parts-used-list" id="partsUsedList"></div>
+        <div class="field span-2">
+          <button type="button" class="btn btn-sm" id="addPartLineBtn">+ Add part</button>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="repairModal">Cancel</button>
+      <button class="btn btn-primary" id="saveRepairBtn">
+        <span class="btn-label">Save ticket</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit staff -->
+<div class="modal-overlay" id="staffModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="staffModalTitle">Add staff member</h3>
+        <p>They'll sign in with the email and password you set here.</p>
+      </div>
+      <button class="modal-close" data-close="staffModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-error" id="staffModalError"></div>
+      <form id="staffForm" class="form-grid">
+        <input type="hidden" id="staffId">
+        <div class="field span-2">
+          <label for="staffName">Full name <span class="req">*</span></label>
+          <input type="text" id="staffName" required>
+        </div>
+        <div class="field span-2" id="staffEmailField">
+          <label for="staffEmail">Email <span class="req">*</span></label>
+          <input type="email" id="staffEmail" required>
+        </div>
+        <div class="field span-2" id="staffPasswordField">
+          <label for="staffPassword">Temporary password <span class="req">*</span></label>
+          <input type="password" id="staffPassword" minlength="6">
+          <span class="hint">At least 6 characters. Share this with them directly — they can change it later.</span>
+        </div>
+        <div class="field">
+          <label for="staffRole">Role</label>
+          <select id="staffRole">
+            <option value="worker">Worker</option>
+            <option value="secretary">Secretary</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="staffActive">Status</label>
+          <select id="staffActive">
+            <option value="true">Active</option>
+            <option value="false">Deactivated</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="staffModal">Cancel</button>
+      <button class="btn btn-primary" id="saveStaffBtn">
+        <span class="btn-label">Save</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm dialog -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal modal-sm">
+    <div class="modal-body">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      </div>
+      <h3 id="confirmTitle">Are you sure?</h3>
+      <p class="section-note" id="confirmBody"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="confirmModal">Cancel</button>
+      <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- Print area for daily report -->
+<div id="printArea">
+  <div class="receipt" id="printReceipt"></div>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/app.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/repairs.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/staff.js"></script>
+</body>
+</html>
