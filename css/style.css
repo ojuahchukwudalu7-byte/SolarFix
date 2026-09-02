@@ -496,3 +496,77 @@ td.num{text-align:right;font-family:var(--font-mono);}
 
 /* Share sheet */
 .share-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ============================================================
+   Responsiveness pass — tablets, phones, small phones
+   ============================================================ */
+
+/* Touch targets: keep every interactive control comfortably tappable */
+.btn, .nav-item, .kanban-card, select, input, textarea, .qty-stepper button, .modal-close, .hamburger{
+  min-height:40px;
+}
+.btn-sm{min-height:34px;}
+.btn-icon{min-height:32px;}
+
+/* Tablets (~980px and down): tighten spacing, stack two-col panels */
+@media(max-width:980px){
+  .content{padding:18px 16px 60px;}
+  .cards-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+}
+
+/* Phones (~900px, sidebar becomes a drawer — base rules already above) */
+@media(max-width:900px){
+  .topbar{padding:0 14px;gap:10px;}
+  .topbar h1{font-size:15px;}
+  .topbar .crumb{font-size:10.5px;}
+  .topbar-actions{gap:8px;}
+  .date-pill{display:none;}
+  .view-head{flex-direction:column;align-items:stretch;gap:10px;}
+  .view-head h2{font-size:18.5px;}
+  .view-actions{width:100%;}
+  .view-actions .btn{flex:1;justify-content:center;}
+  .toolbar{padding:10px 12px;}
+  .modal{margin:0;border-radius:var(--radius-m) var(--radius-m) 0 0;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal-body{max-height:65vh;}
+  .kanban-col{min-width:200px;}
+}
+
+/* Small phones (~480px and down) */
+@media(max-width:480px){
+  body{font-size:13.4px;}
+  .content{padding:14px 10px 56px;}
+  .sidebar-brand .name{font-size:14.5px;}
+  .stat-card .value{font-size:20px;}
+  .cards-grid{grid-template-columns:repeat(2,1fr);gap:9px;}
+  .stat-card{padding:11px 12px;}
+  .panel-head{padding:12px 13px;}
+  .panel-body{padding:12px 13px;}
+  table{font-size:11.8px;min-width:520px;}
+  thead th, tbody td{padding:8px 9px;}
+  .btn{padding:9px 12px;font-size:12.4px;}
+  .auth-card{padding:22px 18px 18px;}
+  .parts-used-row{grid-template-columns:1fr;}
+  .kanban-col{min-width:78vw;flex:0 0 78vw;}
+  .charts-grid{gap:10px;}
+  .chart-card{padding:12px 13px;}
+}
+
+/* Very small phones (~360px and down) */
+@media(max-width:360px){
+  .cards-grid{grid-template-columns:1fr 1fr;}
+  .form-grid.cols-3{grid-template-columns:1fr;}
+  .sidebar{width:82vw;}
+}
+
+/* Landscape phones: shrink the topbar a touch more */
+@media(max-height:420px) and (orientation:landscape){
+  .topbar{height:52px;}
+  .sidebar-brand{padding:12px 14px 10px;}
+}
+
+/* Larger touch-friendly form controls on any touch device */
+@media(hover:none) and (pointer:coarse){
+  .field input, .field select, .field textarea{padding:10px 11px;font-size:14px;}
+  .nav-item{padding:11px 12px;}
+}
