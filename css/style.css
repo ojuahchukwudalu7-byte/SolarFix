@@ -570,3 +570,103 @@ td.num{text-align:right;font-family:var(--font-mono);}
   .field input, .field select, .field textarea{padding:10px 11px;font-size:14px;}
   .nav-item{padding:11px 12px;}
 }
+
+/* ============================================================
+   Dark theme — toggled via [data-theme="dark"] on <html>
+   ============================================================ */
+:root[data-theme="dark"]{
+  --paper-0:#0b1220;
+  --paper-50:#111a2b;
+  --paper-100:#182338;
+  --line:#28344a;
+  --ink-900:#eef2f8;
+  --ink-700:#c3cddd;
+  --ink-500:#8b98b0;
+  --ink-300:#5b6885;
+  --shadow-1:0 1px 2px rgba(0,0,0,.3);
+  --shadow-2:0 8px 24px rgba(0,0,0,.5);
+}
+:root[data-theme="dark"] .topbar{background:var(--paper-50);border-color:var(--line);}
+:root[data-theme="dark"] .topbar-search input{background:var(--paper-100);color:var(--ink-900);}
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .field select,
+:root[data-theme="dark"] .field textarea{background:var(--paper-100);color:var(--ink-900);border-color:var(--line);}
+:root[data-theme="dark"] .field input:focus,
+:root[data-theme="dark"] .field select:focus,
+:root[data-theme="dark"] .field textarea:focus{background:var(--paper-0);}
+:root[data-theme="dark"] .toolbar select,
+:root[data-theme="dark"] .toolbar .search-box input{background:var(--paper-100);color:var(--ink-900);}
+:root[data-theme="dark"] thead th{background:var(--paper-100);}
+:root[data-theme="dark"] tbody tr:hover{background:var(--paper-100);}
+:root[data-theme="dark"] .btn{background:var(--paper-50);color:var(--ink-700);}
+:root[data-theme="dark"] .btn:hover{background:var(--paper-100);}
+:root[data-theme="dark"] .kanban-col{background:var(--paper-100);border-color:var(--line);}
+:root[data-theme="dark"] .kanban-card{background:var(--paper-50);}
+:root[data-theme="dark"] .low-stock-row{background:rgba(217,83,79,.14) !important;}
+:root[data-theme="dark"] .calc-box,
+:root[data-theme="dark"] .info-card{background:rgba(59,130,196,.12);}
+
+/* Theme toggle button */
+.theme-toggle-btn{
+  width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--paper-100);
+  color:var(--ink-700);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.theme-toggle-btn:hover{background:var(--paper-50);}
+.theme-toggle-btn svg{width:17px;height:17px;}
+.theme-toggle-btn .icon-moon{display:none;}
+:root[data-theme="dark"] .theme-toggle-btn .icon-sun{display:none;}
+:root[data-theme="dark"] .theme-toggle-btn .icon-moon{display:block;}
+.auth-theme-toggle{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;}
+.auth-theme-toggle:hover{background:rgba(255,255,255,.2);}
+
+/* ============================================================
+   Password show/hide toggle
+   ============================================================ */
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-toggle-btn{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:30px;height:30px;border:none;background:none;color:var(--ink-500);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;border-radius:6px;
+}
+.pw-toggle-btn:hover{background:var(--paper-100);color:var(--ink-700);}
+.pw-toggle-btn svg{width:16px;height:16px;}
+.pw-toggle-btn .icon-eye-off{display:none;}
+.pw-toggle-btn.showing .icon-eye{display:none;}
+.pw-toggle-btn.showing .icon-eye-off{display:block;}
+
+/* ============================================================
+   Chart card header + share button
+   ============================================================ */
+.chart-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.chart-card-head h4{margin:0;}
+.share-chart-btn svg{width:13px;height:13px;}
+
+/* ============================================================
+   Mobile card-style tables (thead hidden, each row becomes a card)
+   Applies to tables whose cells carry a data-label attribute.
+   ============================================================ */
+@media(max-width:700px){
+  table.stack-on-mobile thead{display:none;}
+  table.stack-on-mobile, table.stack-on-mobile tbody, table.stack-on-mobile tr, table.stack-on-mobile td{display:block;width:100%;}
+  table.stack-on-mobile{min-width:0;}
+  table.stack-on-mobile tr{
+    border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:4px 0;background:var(--paper-50);
+  }
+  table.stack-on-mobile td{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:8px 12px;border-bottom:1px dashed var(--line);text-align:right;white-space:normal;
+  }
+  table.stack-on-mobile td:last-child{border-bottom:none;}
+  table.stack-on-mobile td::before{
+    content:attr(data-label);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--ink-500);text-align:left;flex-shrink:0;
+  }
+  table.stack-on-mobile td.row-actions{justify-content:flex-end;}
+  table.stack-on-mobile td.row-actions::before{display:none;}
+}
+
+/* Better stat-card wrapping on small screens (auto-fit instead of fixed 2-col) */
+@media(max-width:480px){
+  .cards-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));}
+}
