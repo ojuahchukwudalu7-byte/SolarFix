@@ -60,6 +60,54 @@ function renderRepairsKanban() {
       openRepairModal(repair);
     });
   });
+
+  renderRepairsCharts();
+}
+
+let repStatusChart = null;
+let repTechChart = null;
+
+function renderRepairsCharts() {
+  const canvas1 = document.getElementById("repChartStatus");
+  const canvas2 = document.getElementById("repChartTech");
+  if (!canvas1 || !canvas2) return;
+
+  const statusCounts = REPAIR_STATUSES.map((s) => App.state.repairs.filter((r) => r.status === s).length);
+  const statusColors = ["#3b82c4", "#3b82c4", "#e8a23d", "#e8a23d", "#b45f12", "#146a72", "#2f9e64", "#3355c4", "#2f9e64"];
+
+  if (repStatusChart) repStatusChart.destroy();
+  repStatusChart = new Chart(canvas1.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: REPAIR_STATUSES,
+      datasets: [{ data: statusCounts, backgroundColor: statusColors, borderRadius: 6 }],
+    },
+    options: {
+      responsive: true,
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { font: { size: 10 } } } },
+    },
+  });
+
+  const byTech = {};
+  App.state.repairs.forEach((r) => {
+    const tech = App.state.profiles.find((p) => p.id === r.assigned_to);
+    const label = tech ? tech.full_name : "Unassigned";
+    byTech[label] = (byTech[label] || 0) + 1;
+  });
+  const techLabels = Object.keys(byTech);
+  const palette = ["#e8a23d", "#3b82c4", "#2f9e64", "#1f8a8c", "#7440bb", "#d9534f", "#3b6ea5", "#d68c26"];
+
+  if (repTechChart) repTechChart.destroy();
+  repTechChart = new Chart(canvas2.getContext("2d"), {
+    type: "pie",
+    data: {
+      labels: techLabels,
+      datasets: [{ data: techLabels.map((t) => byTech[t]), backgroundColor: techLabels.map((_, idx) => palette[idx % palette.length]) }],
+    },
+    options: { responsive: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10.5 } } } } },
+  });
 }
 
 // ---------- Modal: add/edit repair ----------
