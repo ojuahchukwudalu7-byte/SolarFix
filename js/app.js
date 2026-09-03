@@ -166,4 +166,73 @@ const CATEGORY_COLORS = {
   "Other": "#697386",
 };
 
+// ---------- Theme (light/dark) ----------
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("solarfix-theme", theme);
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "light";
+  applyTheme(current === "dark" ? "light" : "dark");
+}
+function initTheme() {
+  const saved = localStorage.getItem("solarfix-theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(saved || (prefersDark ? "dark" : "light"));
+  document.getElementById("themeToggleAuth")?.addEventListener("click", toggleTheme);
+  document.getElementById("themeToggleApp")?.addEventListener("click", toggleTheme);
+}
+
+// ---------- Password show/hide toggles ----------
+function initPasswordToggles() {
+  document.querySelectorAll(".pw-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      const showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      btn.classList.toggle("showing", !showing);
+      btn.title = showing ? "Show password" : "Hide password";
+    });
+  });
+}
+
+// ---------- Share / download a chart as an image ----------
+async function shareChart(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  canvas.toBlob(async (blob) => {
+    if (!blob) { toast("Could not generate image.", "error"); return; }
+    const file = new File([blob], `${filename}.png`, { type: "image/png" });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "SolarFix chart" });
+        return;
+      } catch (e) {
+        // user cancelled share sheet — fall through to download
+        if (e?.name === "AbortError") return;
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Chart image saved.", "success");
+  }, "image/png");
+}
+function initChartShareButtons() {
+  document.body.addEventListener("click", (e) => {
+    const btn = e.target.closest(".share-chart-btn");
+    if (!btn) return;
+    shareChart(btn.dataset.canvas, btn.dataset.filename || "chart");
+  });
+}
+
 initTodayPill();
+initTheme();
+initPasswordToggles();
+initChartShareButtons();
