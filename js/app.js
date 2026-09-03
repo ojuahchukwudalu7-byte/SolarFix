@@ -88,9 +88,9 @@ function goToView(name) {
   closeSidebarMobile();
 
   if (name === "dashboard") renderDashboard();
-  if (name === "inventory") renderInventoryTable();
-  if (name === "repairs") renderRepairsKanban();
-  if (name === "reports") renderReport();
+  if (name === "inventory") requestAnimationFrame(() => requestAnimationFrame(renderInventoryTable));
+  if (name === "repairs") requestAnimationFrame(() => requestAnimationFrame(renderRepairsKanban));
+  if (name === "reports") requestAnimationFrame(() => requestAnimationFrame(renderReport));
   if (name === "staff") renderStaffTable();
 }
 
