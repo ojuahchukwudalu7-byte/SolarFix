@@ -11,9 +11,9 @@ function renderStaffTable() {
   tbody.innerHTML = App.state.profiles
     .map((p) => `
       <tr data-id="${p.id}">
-        <td>${escapeHtml(p.full_name)}${p.id === App.state.profile.id ? ' <span class="text-muted">(you)</span>' : ""}</td>
-        <td><span class="badge badge-role-${p.role}">${escapeHtml(p.role)}</span></td>
-        <td>${p.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-onleave">Deactivated</span>'}</td>
+        <td data-label="Name">${escapeHtml(p.full_name)}${p.id === App.state.profile.id ? ' <span class="text-muted">(you)</span>' : ""}</td>
+        <td data-label="Role"><span class="badge badge-role-${p.role}">${escapeHtml(p.role)}</span></td>
+        <td data-label="Status">${p.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-onleave">Deactivated</span>'}</td>
         <td class="row-actions">
           <button class="btn btn-sm edit-staff-btn" ${!hasRole("admin") ? "disabled" : ""}>Edit</button>
         </td>
@@ -76,13 +76,34 @@ document.getElementById("saveStaffBtn").addEventListener("click", async () => {
     const email = document.getElementById("staffEmail").value.trim();
     const password = document.getElementById("staffPassword").value;
 
-    const { data, error } = await sb.functions.invoke("create-staff", {
-      body: { full_name, email, password, role },
-    });
+    let result;
+    try {
+      result = await sb.functions.invoke("create-staff", {
+        body: { full_name, email, password, role },
+      });
+    } catch (networkErr) {
+      setBtnLoading(btn, false, "Save");
+      errEl.innerHTML =
+        `Could not reach the staff-creation service. This usually means the <b>create-staff</b> function ` +
+        `hasn't been deployed yet in Supabase (Edge Functions → Deploy a new function → name it exactly ` +
+        `<b>create-staff</b> → paste in the code from <b>supabase/functions/create-staff/index.ts</b>). ` +
+        `Technical detail: ${escapeHtml(networkErr.message || String(networkErr))}`;
+      errEl.classList.add("show");
+      return;
+    }
+
+    const { data, error } = result;
     setBtnLoading(btn, false, "Save");
 
     if (error || data?.error) {
-      errEl.textContent = data?.error || error.message || "Could not create staff account.";
+      const msg = data?.error || error.message || "Could not create staff account.";
+      if (/fetch|network|failed to send/i.test(msg)) {
+        errEl.innerHTML =
+          `Could not reach the staff-creation service. Check that the <b>create-staff</b> Edge Function is ` +
+          `deployed in your Supabase project (Edge Functions section) and that its name matches exactly.`;
+      } else {
+        errEl.textContent = msg;
+      }
       errEl.classList.add("show");
       return;
     }
