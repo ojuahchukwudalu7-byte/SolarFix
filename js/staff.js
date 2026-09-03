@@ -8,22 +8,86 @@ function applyStaffPermissionGates() {
 
 function renderStaffTable() {
   const tbody = document.getElementById("staffBody");
+  const isAdmin = hasRole("admin");
   tbody.innerHTML = App.state.profiles
-    .map((p) => `
+    .map((p) => {
+      const isSelf = p.id === App.state.profile.id;
+      return `
       <tr data-id="${p.id}">
-        <td data-label="Name">${escapeHtml(p.full_name)}${p.id === App.state.profile.id ? ' <span class="text-muted">(you)</span>' : ""}</td>
+        <td data-label="Name">${escapeHtml(p.full_name)}${isSelf ? ' <span class="text-muted">(you)</span>' : ""}</td>
         <td data-label="Role"><span class="badge badge-role-${p.role}">${escapeHtml(p.role)}</span></td>
-        <td data-label="Status">${p.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-onleave">Deactivated</span>'}</td>
+        <td data-label="Status">${p.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-onleave">Suspended</span>'}</td>
         <td class="row-actions">
-          <button class="btn btn-sm edit-staff-btn" ${!hasRole("admin") ? "disabled" : ""}>Edit</button>
+          <button class="btn btn-sm edit-staff-btn" ${!isAdmin ? "disabled" : ""}>Edit</button>
+          <button class="btn btn-sm toggle-active-btn" ${!isAdmin || isSelf ? "disabled" : ""} title="${p.active ? "Suspend" : "Reactivate"}">
+            ${p.active ? "Suspend" : "Reactivate"}
+          </button>
+          <button class="btn btn-sm btn-danger delete-staff-btn" ${!isAdmin || isSelf ? "disabled" : ""} title="Delete account">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+          </button>
         </td>
-      </tr>`)
+      </tr>`;
+    })
     .join("");
 
   tbody.querySelectorAll(".edit-staff-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const id = e.target.closest("tr").dataset.id;
       openStaffModal(App.state.profiles.find((p) => p.id === id), true);
+    });
+  });
+
+  tbody.querySelectorAll(".toggle-active-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = e.target.closest("tr").dataset.id;
+      const person = App.state.profiles.find((p) => p.id === id);
+      if (!person) return;
+      const goingActive = !person.active;
+      askConfirm(
+        goingActive ? "Reactivate this account?" : "Suspend this account?",
+        goingActive
+          ? `${person.full_name} will be able to sign in again.`
+          : `${person.full_name} will not be able to sign in until reactivated. Their history and records are kept.`,
+        async () => {
+          const { error } = await sb.from("profiles").update({ active: goingActive }).eq("id", id);
+          if (error) { toast("Could not update status: " + error.message, "error"); return; }
+          toast(goingActive ? "Account reactivated." : "Account suspended.", "success");
+          await loadAllProfiles();
+          renderStaffTable();
+        }
+      );
+    });
+  });
+
+  tbody.querySelectorAll(".delete-staff-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = e.target.closest("tr").dataset.id;
+      const person = App.state.profiles.find((p) => p.id === id);
+      if (!person) return;
+      askConfirm(
+        "Delete this account permanently?",
+        `${person.full_name} will lose access immediately and their login will be permanently removed. Repairs and inventory history they created will stay on record. This can't be undone.`,
+        async () => {
+          let result;
+          try {
+            result = await sb.functions.invoke("delete-staff", { body: { user_id: id } });
+          } catch (networkErr) {
+            toast(
+              "Could not reach the delete service — check the 'delete-staff' Edge Function is deployed in Supabase (same way as create-staff).",
+              "error"
+            );
+            return;
+          }
+          const { data, error } = result;
+          if (error || data?.error) {
+            toast(data?.error || error.message || "Could not delete account.", "error");
+            return;
+          }
+          toast(`${person.full_name}'s account was deleted.`, "success");
+          await loadAllProfiles();
+          renderStaffTable();
+        }
+      );
     });
   });
 }
