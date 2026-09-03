@@ -57,13 +57,13 @@ function renderInventoryTable() {
       const color = CATEGORY_COLORS[i.category] || "#697386";
       return `
         <tr class="${low ? "low-stock-row" : ""}" data-id="${i.id}">
-          <td><span class="cat-chip"><i style="background:${color}"></i>${escapeHtml(i.category)}</span></td>
-          <td>${escapeHtml(i.name)}</td>
-          <td class="mono">${escapeHtml(i.spec_1 || "—")}</td>
-          <td class="mono">${escapeHtml(i.spec_2 || "—")}${i.spec_3 ? " · " + escapeHtml(i.spec_3) : ""}</td>
-          <td class="num">${i.quantity}</td>
-          <td>${low ? '<span class="badge badge-low">Low</span>' : '<span class="badge badge-ok">OK</span>'}</td>
-          <td class="text-muted">${fmtDateTime(i.updated_at)}</td>
+          <td data-label="Category"><span class="cat-chip"><i style="background:${color}"></i>${escapeHtml(i.category)}</span></td>
+          <td data-label="Name">${escapeHtml(i.name)}</td>
+          <td data-label="Spec" class="mono">${escapeHtml(i.spec_1 || "—")}</td>
+          <td data-label="Volts/Type" class="mono">${escapeHtml(i.spec_2 || "—")}${i.spec_3 ? " · " + escapeHtml(i.spec_3) : ""}</td>
+          <td data-label="Qty" class="num">${i.quantity}</td>
+          <td data-label="Status">${low ? '<span class="badge badge-low">Low</span>' : '<span class="badge badge-ok">OK</span>'}</td>
+          <td data-label="Updated" class="text-muted">${fmtDateTime(i.updated_at)}</td>
           <td class="row-actions">
             <button class="btn btn-sm btn-icon edit-item-btn" title="Edit">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -78,6 +78,48 @@ function renderInventoryTable() {
       const id = e.target.closest("tr").dataset.id;
       openItemModal(App.state.items.find((i) => i.id === id));
     });
+  });
+
+  renderInventoryCharts();
+}
+
+let invCategoryChart = null;
+let invStatusChart = null;
+
+function renderInventoryCharts() {
+  const canvas1 = document.getElementById("invChartCategory");
+  const canvas2 = document.getElementById("invChartStatus");
+  if (!canvas1 || !canvas2) return;
+
+  const byCat = {};
+  App.state.items.forEach((i) => { byCat[i.category] = (byCat[i.category] || 0) + i.quantity; });
+  const catLabels = Object.keys(byCat);
+
+  if (invCategoryChart) invCategoryChart.destroy();
+  invCategoryChart = new Chart(canvas1.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: catLabels,
+      datasets: [{ data: catLabels.map((c) => byCat[c]), backgroundColor: catLabels.map((c) => CATEGORY_COLORS[c] || "#697386"), borderRadius: 6 }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } },
+    },
+  });
+
+  const okCount = App.state.items.filter((i) => i.quantity > i.low_stock_threshold).length;
+  const lowCount = App.state.items.filter((i) => i.quantity <= i.low_stock_threshold).length;
+
+  if (invStatusChart) invStatusChart.destroy();
+  invStatusChart = new Chart(canvas2.getContext("2d"), {
+    type: "pie",
+    data: {
+      labels: ["In stock", "Low stock"],
+      datasets: [{ data: [okCount, lowCount], backgroundColor: ["#2f9e64", "#d9534f"] }],
+    },
+    options: { responsive: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10.5 } } } } },
   });
 }
 
