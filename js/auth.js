@@ -130,7 +130,7 @@ async function loadProfileAndData() {
   }
 
   if (!profile.active) {
-    toast("Your account has been deactivated. Contact your admin.", "error");
+    toast("Your account has been suspended. Contact your admin.", "error");
     await sb.auth.signOut();
     showAuthScreen();
     return;
