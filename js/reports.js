@@ -55,16 +55,16 @@ function renderDashboard() {
     .slice(0, 10)
     .map((l) => `
       <tr>
-        <td class="text-muted">${fmtDateTime(l.created_at)}</td>
-        <td>${escapeHtml(l.item_name_snapshot)}</td>
-        <td>${movementBadge(l.action)}</td>
-        <td class="num">${l.quantity_change > 0 ? "+" : ""}${l.quantity_change}</td>
-        <td>${escapeHtml(l.actor_name_snapshot)}</td>
+        <td data-label="When" class="text-muted">${fmtDateTime(l.created_at)}</td>
+        <td data-label="Item">${escapeHtml(l.item_name_snapshot)}</td>
+        <td data-label="Action">${movementBadge(l.action)}</td>
+        <td data-label="Change" class="num">${l.quantity_change > 0 ? "+" : ""}${l.quantity_change}</td>
+        <td data-label="By">${escapeHtml(l.actor_name_snapshot)}</td>
       </tr>`)
     .join("") || `<tr><td colspan="5" class="text-muted">No activity yet.</td></tr>`;
 
   document.getElementById("dashLowStockBody").innerHTML = lowStock
-    .map((i) => `<tr><td>${escapeHtml(i.name)}</td><td class="num">${i.quantity}</td></tr>`)
+    .map((i) => `<tr><td data-label="Item">${escapeHtml(i.name)}</td><td data-label="Qty" class="num">${i.quantity}</td></tr>`)
     .join("") || `<tr><td colspan="2" class="text-muted">Nothing low right now.</td></tr>`;
 }
 
@@ -137,7 +137,7 @@ function renderReport() {
   const ctx2 = document.getElementById("chartCategory").getContext("2d");
   if (categoryChart) categoryChart.destroy();
   categoryChart = new Chart(ctx2, {
-    type: "doughnut",
+    type: "pie",
     data: {
       labels: catLabels,
       datasets: [{ data: catLabels.map((c) => byCat[c]), backgroundColor: catLabels.map((c) => CATEGORY_COLORS[c] || "#697386") }],
@@ -146,11 +146,11 @@ function renderReport() {
   });
 
   document.getElementById("reportReorderBody").innerHTML = reorderList
-    .map((i) => `<tr><td>${escapeHtml(i.category)}</td><td>${escapeHtml(i.name)}</td><td class="num">${i.quantity}</td><td class="num">${i.low_stock_threshold}</td></tr>`)
+    .map((i) => `<tr><td data-label="Category">${escapeHtml(i.category)}</td><td data-label="Item">${escapeHtml(i.name)}</td><td data-label="In stock" class="num">${i.quantity}</td><td data-label="Threshold" class="num">${i.low_stock_threshold}</td></tr>`)
     .join("") || `<tr><td colspan="4" class="text-muted">Nothing needs reordering today.</td></tr>`;
 
   document.getElementById("reportLogBody").innerHTML = dayLog
-    .map((l) => `<tr><td class="text-muted">${fmtDateTime(l.created_at)}</td><td>${escapeHtml(l.item_name_snapshot)}</td><td>${movementBadge(l.action)}</td><td class="num">${l.quantity_change > 0 ? "+" : ""}${l.quantity_change}</td><td>${escapeHtml(l.actor_name_snapshot)}</td></tr>`)
+    .map((l) => `<tr><td data-label="Time" class="text-muted">${fmtDateTime(l.created_at)}</td><td data-label="Item">${escapeHtml(l.item_name_snapshot)}</td><td data-label="Action">${movementBadge(l.action)}</td><td data-label="Change" class="num">${l.quantity_change > 0 ? "+" : ""}${l.quantity_change}</td><td data-label="By">${escapeHtml(l.actor_name_snapshot)}</td></tr>`)
     .join("") || `<tr><td colspan="5" class="text-muted">No activity logged for this date.</td></tr>`;
 
   buildPrintReceipt(dateStr, { added, removed, repairsToday, completedToday, reorderList, dayLog });
